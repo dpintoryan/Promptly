@@ -1,0 +1,10 @@
+# ── Never commit these ──────────────────────────────────────
+.env              # Contains your real API key — keep this private!
+node_modules/     # Installed packages — Railway installs these fresh on deploy
+
+# ── OS / editor noise ────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
