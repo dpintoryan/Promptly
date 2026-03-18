@@ -1,253 +1,132 @@
-# Promptly
+# Promptly — Standalone Edition
 
-A Chrome extension that transforms raw, vague AI prompts into structured, high-quality prompts using proven prompt engineering frameworks. It also measures the real output token savings of using a structured prompt vs a raw one by running both through GPT-4o in parallel.
+A Chrome extension that transforms raw AI prompts into structured, high-quality prompts using proven prompt engineering frameworks. Supports **OpenAI, Anthropic, Google Gemini, DeepSeek, and Grok**. No backend, no accounts — just your own API key stored locally.
 
 ---
 
 ## What It Does
 
-Most people get poor results from AI tools because their prompts are too vague. Promptly fixes this by automatically rewriting your prompt using one of three frameworks:
+Paste a raw prompt, choose a framework, and Promptly rewrites it into a structured prompt that gets better results from any AI tool. After optimizing, it runs both prompts through your chosen AI and shows you the **real output token difference**.
 
-- **TCRTE** (Role, Context, Task, Constraints, Output Format) — best for work, school, planning, email
-- **Chain-of-Thought** — best for math, decisions, debugging, step-by-step reasoning
-- **Few-Shot** — best for copying a style, format, tone, or pattern
-
-After optimizing, Promptly runs both your original and optimized prompt through GPT-4o and shows you the real output token difference — proving whether the structured prompt produces a more focused, cheaper response.
-
-Users sign in with Google, get 10 free optimizations per day, and their last 10 prompts are saved to a history tab with copy, favourite, and delete options.
-
----
-
-## Features
-
-- Google OAuth sign-in (no passwords)
-- Three prompt engineering frameworks with use-case chips
-- Real output token comparison using parallel GPT-4o calls
-- Cost per 100 uses displayed for raw vs optimized prompt
-- Prompt history (last 10) synced to MongoDB — works across devices
-- Favourite, copy, and delete on history entries
-- Tier system: Basic (10/day), Pro (50/day), Admin (unlimited)
-- Security: JWT auth, input sanitization, injection blocking, IP rate limiting, Helmet headers, NoSQL injection protection
-
----
-
-## Tech Stack
-
-| Layer | Technology |
+**Three frameworks:**
+| Framework | Best for |
 |---|---|
-| Extension | Chrome MV3, Vanilla JS |
-| Backend | Node.js, Express |
-| Database | MongoDB Atlas (Mongoose) |
-| Auth | Google OAuth 2.0 + JWT |
-| AI | OpenAI GPT-4o |
-| Hosting | Railway (or any Node host) |
+| **TCRTE** (Role, Context, Task, Constraints, Output Format) | Work, school, planning, email |
+| **Chain-of-Thought** | Math, decisions, debugging, reasoning |
+| **Few-Shot** | Copying a style, format, tone, or pattern |
 
 ---
 
-## Project Structure
+## Supported Providers
 
-```
-promptly/
-├── extension/               # Chrome extension files
-│   ├── manifest.json        # Extension config, permissions, OAuth client ID
-│   ├── popup.html           # Full UI — sign in, optimize, history views
-│   ├── popup.js             # UI logic, framework definitions, token display
-│   ├── background.js        # Service worker — handles Google OAuth flow
-│   ├── api.js               # Fetch wrapper with JWT auth
-│   └── auth.js              # chrome.storage helpers for token/user
-│
-└── backend/                 # Node.js Express backend
-    ├── server.js            # Entry point, middleware stack
-    ├── config/
-    │   └── db.js            # MongoDB connection
-    ├── models/
-    │   ├── User.js          # User schema — tier, usage, daily reset
-    │   └── PromptHistory.js # History schema — prompts, token stats, favourites
-    ├── routes/
-    │   ├── auth.js          # POST /auth/google, GET /auth/me, POST /auth/signout
-    │   ├── optimize.js      # POST /optimize — runs parallel GPT calls
-    │   └── history.js       # GET/DELETE /history, PATCH /history/:id/favourite
-    ├── middleware/
-    │   ├── auth.js          # JWT verification
-    │   ├── rateLimit.js     # Per-user daily tier limit via MongoDB
-    │   └── globalRateLimit.js # IP-based rate limiting (global + auth routes)
-    └── utils/
-        ├── sanitize.js      # Input sanitization, injection detection, char limits
-        └── tiers.js         # Tier definitions and limit helpers
-```
+| Provider | Models | Key format |
+|---|---|---|
+| **OpenAI** | gpt-4o, gpt-4o-mini, gpt-4-turbo | `sk-...` |
+| **Anthropic** | claude-opus-4-5, claude-sonnet-4-5, claude-haiku | `sk-ant-...` |
+| **Google Gemini** | gemini-2.0-flash, gemini-1.5-pro, gemini-1.5-flash | `AIza...` |
+| **DeepSeek** | deepseek-chat, deepseek-reasoner | `sk-...` |
+| **Grok (xAI)** | grok-2-latest, grok-2-vision-latest | `xai-...` |
+
+You can save API keys for multiple providers and switch between them at any time using the provider chip in the header.
 
 ---
 
-## Setup Guide
+## Installation
 
-### Prerequisites
+### Step 1 — Get an API Key
 
-- Node.js 18+
-- A [MongoDB Atlas](https://www.mongodb.com/atlas) account (free tier works)
-- An [OpenAI](https://platform.openai.com) account with API access
-- A [Google Cloud Console](https://console.cloud.google.com) project
-- A [Railway](https://railway.app) account (or any Node hosting)
-- A [Chrome Web Store developer account](https://chrome.google.com/webstore/devconsole) ($5 one-time fee) — required for a fixed extension ID
+Get a key from whichever provider you want to use:
 
----
-
-### Step 1 — MongoDB Atlas
-
-1. Create a free cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas)
-2. Create a database user with a password
-3. Under **Network Access** add `0.0.0.0/0` to allow all IPs
-4. Click **Connect** → **Drivers** → copy the connection string
-5. Replace `<username>` and `<password>` in the string — save it for later
-
----
-
-### Step 2 — OpenAI API Key
-
-1. Go to [platform.openai.com/api-keys](https://platform.openai.com/api-keys)
-2. Create a new secret key — save it for later
-
----
-
-### Step 3 — Deploy the Backend
-
-1. Push the `backend/` folder to a GitHub repository
-2. Go to [railway.app](https://railway.app) → New Project → Deploy from GitHub
-3. Select your repo
-4. Go to your service → **Variables** tab and add:
-
-| Variable | Value |
+| Provider | Where to get a key |
 |---|---|
-| `OPENAI_API_KEY` | Your OpenAI key |
-| `MONGODB_URI` | Your Atlas connection string |
-| `JWT_SECRET` | Run `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` and paste the output |
-| `GOOGLE_CLIENT_ID` | Your Google OAuth client ID (set up in Step 4) |
+| OpenAI | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
+| Anthropic | [console.anthropic.com/account/keys](https://console.anthropic.com/account/keys) |
+| Google Gemini | [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) |
+| DeepSeek | [platform.deepseek.com/api_keys](https://platform.deepseek.com/api_keys) |
+| Grok (xAI) | [console.x.ai](https://console.x.ai/) |
 
-5. Railway will deploy automatically. Note your Railway URL — it looks like `https://your-app.up.railway.app`
+### Step 2 — Download Promptly
 
----
-
-### Step 4 — Google Cloud Console
-
-1. Go to [console.cloud.google.com](https://console.cloud.google.com)
-2. Create a new project
-3. Go to **APIs & Services** → **Library** → enable the **People API**
-4. Go to **APIs & Services** → **OAuth consent screen**
-   - Select **External**
-   - Fill in app name (Promptly), your email, and save
-5. Go to **APIs & Services** → **Credentials** → **+ Create Credentials** → **OAuth 2.0 Client ID**
-   - Application type: **Chrome Extension**
-   - Name: Promptly
-   - Item ID: your Chrome Web Store extension ID (from Step 5)
-6. Copy the **Client ID** — it ends in `.apps.googleusercontent.com`
-7. Add this Client ID to Railway as `GOOGLE_CLIENT_ID`
-
----
-
-### Step 5 — Chrome Web Store (required for fixed extension ID)
-
-A fixed extension ID is required so Google OAuth works for all users, not just you.
-
-1. Go to [chrome.google.com/webstore/devconsole](https://chrome.google.com/webstore/devconsole) and pay the $5 registration fee
-2. Click **New Item** and upload a zip of the `extension/` folder
-3. The store assigns your extension a **permanent ID** immediately — copy it
-4. Use this ID as the **Item ID** in your Google Cloud OAuth client (Step 4)
-5. You can keep the listing as **Unlisted** — only people with your direct link can install it
-
----
-
-### Step 6 — Configure the Extension
-
-Open `extension/api.js` and `extension/background.js` and replace:
-
-```javascript
-const BACKEND_URL = "YOUR_BACKEND_URL_HERE";
+```bash
+git clone https://github.com/YOUR_USERNAME/promptly-standalone.git
 ```
 
-With your Railway URL:
+Or download the ZIP from GitHub and extract it.
 
-```javascript
-const BACKEND_URL = "https://your-app.up.railway.app";
-```
+### Step 3 — Load into Chrome
 
-Open `extension/manifest.json` and replace:
+1. Open Chrome → navigate to `chrome://extensions`
+2. Enable **Developer mode** (top-right toggle)
+3. Click **Load unpacked**
+4. Select the `promptly-standalone` folder
+5. The Promptly ✦ icon will appear in your toolbar
 
-```json
-"client_id": "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"
-```
+### Step 4 — Set Up Your Provider
 
-With your actual Google OAuth Client ID.
-
----
-
-### Step 7 — Set Your Admin Email
-
-Open `backend/routes/auth.js` and replace:
-
-```javascript
-const ADMIN_EMAIL = "YOUR_ADMIN_EMAIL@gmail.com";
-```
-
-With your Google account email. This account will automatically get the **Admin** tier (unlimited prompts) every time it signs in.
+1. Click the Promptly icon
+2. Select your provider from the 5 cards
+3. Choose a model
+4. Enter your API key
+5. Click **Save & Start** — Promptly verifies the key with a test call then opens the main interface
 
 ---
 
-### Step 8 — Add the Extension Key (for local testing)
+## Switching Providers
 
-To make your local extension use the same ID as the Web Store version:
-
-1. Go to your Chrome Web Store developer console → your listing → **Package** tab
-2. Download your uploaded package and unzip it
-3. Copy the `"key"` field from that `manifest.json`
-4. Paste it into your local `extension/manifest.json`
-
-This ensures Google OAuth works when loading the extension locally via developer mode.
+Click the **provider chip** in the top-right of the extension (e.g. "OpenAI") to open the setup screen. Select any provider — if you've previously saved a key for it, it will be pre-filled. Each provider's key is stored separately so you can switch freely.
 
 ---
 
-### Step 9 — Load the Extension
+## Privacy
 
-1. Open Chrome and go to `chrome://extensions`
-2. Enable **Developer mode** (top right toggle)
-3. Click **Load unpacked** and select the `extension/` folder
-4. The Promptly icon will appear in your toolbar
+- API keys are stored in `chrome.storage.local` — never sent anywhere except directly to the selected provider's API
+- Prompt history is stored in `chrome.storage.local` — never sent to any server
+- No analytics, no tracking, no external services beyond the selected AI provider
 
 ---
 
-## Environment Variables Reference
+## Cost
 
-| Variable | Where to get it |
+Each optimization fires **two API calls** in parallel:
+1. **Optimization call** — generates the structured prompt (up to 1024 output tokens)
+2. **Comparison call** — runs your raw prompt to measure baseline output tokens (up to 512 tokens)
+
+Approximate output token pricing per provider (as of 2025):
+
+| Provider | Per 1M output tokens |
 |---|---|
-| `OPENAI_API_KEY` | [platform.openai.com/api-keys](https://platform.openai.com/api-keys) |
-| `MONGODB_URI` | MongoDB Atlas → Connect → Drivers |
-| `JWT_SECRET` | Generate locally: `node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"` |
-| `GOOGLE_CLIENT_ID` | Google Cloud Console → Credentials → OAuth 2.0 Client ID |
+| OpenAI gpt-4o | $10.00 |
+| Anthropic claude-sonnet | $15.00 |
+| Google gemini-2.0-flash | $0.60 |
+| DeepSeek deepseek-chat | $1.10 |
+| Grok grok-2 | $15.00 |
+
+A typical optimization costs less than $0.003. Update `costPer1M` in `providers.js` if pricing changes.
 
 ---
 
-## Tier System
+## File Structure
 
-Tiers are stored per user in MongoDB. To change a user's tier, find their document in the `users` collection and update the `tier` field.
-
-| Tier | Daily limit |
-|---|---|
-| `basic` | 10 prompts |
-| `pro` | 50 prompts |
-| `admin` | Unlimited |
-
-Daily usage resets at midnight EST. The admin email set in `routes/auth.js` is automatically assigned the `admin` tier on every sign-in.
+```
+promptly-standalone/
+├── manifest.json    — Extension config, host permissions for all providers
+├── popup.html       — Full UI (setup, optimize, history views)
+├── popup.js         — UI logic, optimization flow, token comparison
+├── providers.js     — All provider definitions, API call implementations
+├── storage.js       — chrome.storage.local helpers (multi-provider key storage)
+├── icons/           — Extension icons
+└── README.md
+```
 
 ---
 
-## Token Comparison — How It Works
+## Customization
 
-When a user clicks **Perfect This Prompt**, the backend fires two GPT-4o calls simultaneously using `Promise.all`:
+**Add a new provider** — add an entry to `PROVIDERS` in `providers.js`, implement a `callXxx()` function, add a case in `callProvider()`, add the host to `manifest.json` host_permissions, and add a card in `popup.html`.
 
-1. **Optimization call** — rewrites the raw prompt using the selected framework
-2. **Baseline call** — runs the raw prompt as-is with a simple "be concise" system prompt, capped at 512 tokens
+**Change pricing** — update `costPer1M` in the relevant provider entry in `providers.js`.
 
-Both calls return `usage.completion_tokens` from OpenAI's API — the actual number of output tokens generated. The difference is shown as a real measured saving, not an estimate.
-
-Pricing used for the cost card: **$10.00 per 1M output tokens** (GPT-4o rate as of 2024 — update `OUTPUT_COST_PER_TOKEN` in `routes/optimize.js` if this changes).
+**Change default model** — update `defaultModel` in the provider entry in `providers.js`.
 
 ---
 

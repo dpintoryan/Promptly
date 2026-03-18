@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Promptly",
+  "version": "2.0.0",
+  "description": "Transform raw AI prompts into structured, high-quality prompts. Supports OpenAI, Anthropic, Gemini, DeepSeek, and Grok.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Promptly"
+  },
+  "permissions": [
+    "storage",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://api.openai.com/*",
+    "https://api.anthropic.com/*",
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.deepseek.com/*",
+    "https://api.x.ai/*"
+  ],
+  "icons": {
+    "16":  "icons/icon16.png",
+    "48":  "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
